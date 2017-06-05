@@ -1,6 +1,6 @@
 {
   "name": "meshblu-connector-installer-macos",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Generate meshblu-connector installers for MacOS",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,9 @@
   "homepage": "https://github.com/octoblu/meshblu-connector-installer-macos#readme",
   "dependencies": {
     "@octoblu/osx-pkg": "^1.1.0",
-    "dashdash": "^1.14.1"
+    "axios": "^0.16.2",
+    "dashdash": "^1.14.1",
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
     "husky": "^0.13.4",

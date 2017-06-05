@@ -3,6 +3,7 @@ const path = require("path")
 const createPackage = require("@octoblu/osx-pkg")
 const fs = require("fs")
 const chalk = require("chalk")
+const { CodeSign } = require("./codesign")
 
 const CLI_OPTIONS = [
   {
@@ -35,6 +36,13 @@ const CLI_OPTIONS = [
     env: "MESHBLU_CONNECTOR_DEPLOY_PATH",
     help: "Deploy path where assets are located. Defaults to current directory/deploy",
     helpArg: "PATH",
+  },
+  {
+    names: ["cert-password"],
+    type: "string",
+    env: "MESHBLU_CONNECTOR_CERT_PASSWORD",
+    help: "Password to unlock .p12 certificate",
+    helpArg: "PASSWORD",
   },
 ]
 
@@ -75,12 +83,15 @@ class MeshbluConnectorInstallerCommand {
     return opts
   }
 
-  run() {
+  async run() {
     const options = this.parseArgv({ argv: this.argv })
-    const { type, title, deployPath } = options
+    const { type, title, deploy_path, cert_password } = options
+    const deployPath = deploy_path
+    const certPassword = cert_password
     var errors = []
     if (!type) errors.push(new Error("MeshbluConnectorCommand requires --type or MESHBLU_CONNECTOR_TYPE"))
     if (!title) errors.push(new Error("MeshbluConnectorCommand requires --title or MESHBLU_CONNECTOR_TITLE"))
+    if (!certPassword) errors.push(new Error("MeshbluConnectorCommand requires --cert-password or MESHBLU_CONNECTOR_CERT_PASSWORD"))
 
     if (errors.length) {
       console.log(`usage: meshblu-connector-installer [OPTIONS]\noptions:\n${this.parser.help({ includeEnv: true })}`)
@@ -90,7 +101,12 @@ class MeshbluConnectorInstallerCommand {
       process.exit(1)
     }
 
-    this.buildInstaller({ type, title, deployPath })
+    await this.buildInstaller({ type, title, deployPath })
+    try {
+      await this.signInstaller({ type, deployPath, certPassword })
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   buildInstaller({ type, title, deployPath }) {
@@ -103,7 +119,18 @@ class MeshbluConnectorInstallerCommand {
       title: title,
     }
 
-    createPackage(opts).pipe(fs.createWriteStream(installerPath))
+    return new Promise((resolve, reject) => {
+      const stream = createPackage(opts)
+      stream.pipe(fs.createWriteStream(installerPath))
+      stream.on("end", resolve)
+      stream.on("error", reject)
+    })
+  }
+
+  signInstaller({ type, deployPath, certPassword }) {
+    const filePath = path.join(deployPath, "Installer.pkg")
+    const codeSign = new CodeSign({ certPassword, filePath, deployPath })
+    return codeSign.sign()
   }
 
   die(error) {
