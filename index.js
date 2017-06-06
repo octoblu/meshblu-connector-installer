@@ -1,9 +1,11 @@
 const dashdash = require("dashdash")
 const path = require("path")
-const createPackage = require("@octoblu/osx-pkg")
+const util = require("util")
 const fs = require("fs")
 const chalk = require("chalk")
-const { CodeSign } = require("./codesign")
+const { Packager } = require("./src/packager")
+const { CodeSigner } = require("./src/codesigner")
+const { DMGer } = require("./src/dmger")
 
 const CLI_OPTIONS = [
   {
@@ -29,6 +31,13 @@ const CLI_OPTIONS = [
     env: "MESHBLU_CONNECTOR_TYPE",
     help: "meshblu connector type",
     helpArg: "TYPE",
+  },
+  {
+    names: ["output-path"],
+    type: "string",
+    env: "MESHBLU_CONNECTOR_OUTPUT_PATH",
+    help: "Deploy path where assets are located. Defaults to current directory/installer",
+    helpArg: "PATH",
   },
   {
     names: ["deploy-path"],
@@ -64,11 +73,17 @@ class MeshbluConnectorInstallerCommand {
       return {}
     }
 
-    if (!opts.deployPath) {
-      opts.deployPath = path.join(process.cwd(), "deploy")
+    if (!opts.deploy_path) {
+      opts.deploy_path = path.join(process.cwd(), "deploy")
     }
 
-    opts.deployPath = path.resolve(opts.deployPath)
+    opts.deploy_path = path.resolve(opts.deploy_path)
+
+    if (!opts.output_path) {
+      opts.output_path = path.join(process.cwd(), "installer")
+    }
+
+    opts.output_path = path.resolve(opts.output_path)
 
     if (opts.help) {
       console.log(`usage: meshblu-connector-installer [OPTIONS]\noptions:\n${this.parser.help({ includeEnv: true })}`)
@@ -85,7 +100,8 @@ class MeshbluConnectorInstallerCommand {
 
   async run() {
     const options = this.parseArgv({ argv: this.argv })
-    const { type, title, deploy_path, cert_password } = options
+    const { type, title, deploy_path, cert_password, output_path } = options
+    const outputPath = output_path
     const deployPath = deploy_path
     const certPassword = cert_password
     var errors = []
@@ -101,36 +117,41 @@ class MeshbluConnectorInstallerCommand {
       process.exit(1)
     }
 
-    await this.buildInstaller({ type, title, deployPath })
+    if (!fs.existsSync(outputPath)) fs.mkdirSync(outputPath)
+
     try {
-      await this.signInstaller({ type, deployPath, certPassword })
+      await this.buildInstaller({ type, title, deployPath, outputPath })
     } catch (error) {
-      console.error(error)
+      this.die(error)
+    }
+
+    try {
+      await this.signInstaller({ type, outputPath, certPassword })
+    } catch (error) {
+      this.die(error)
+    }
+
+    try {
+      await this.createDMG({ title, outputPath })
+    } catch (error) {
+      this.die(error)
     }
   }
 
-  buildInstaller({ type, title, deployPath }) {
-    const installerPath = path.join(deployPath, "Installer.pkg")
-    const installLocation = `/Library/MeshbluConnectors/${type}`
-    const opts = {
-      dir: deployPath,
-      installLocation: installLocation,
-      identifier: `.com.octoblu.connectors.${type}.pkg`,
-      title: title,
-    }
-
-    return new Promise((resolve, reject) => {
-      const stream = createPackage(opts)
-      stream.pipe(fs.createWriteStream(installerPath))
-      stream.on("end", resolve)
-      stream.on("error", reject)
-    })
+  buildInstaller({ type, title, deployPath, outputPath }) {
+    const packager = new Packager({ type, title, deployPath, outputPath })
+    return packager.package()
   }
 
-  signInstaller({ type, deployPath, certPassword }) {
-    const filePath = path.join(deployPath, "Installer.pkg")
-    const codeSign = new CodeSign({ certPassword, filePath, deployPath })
-    return codeSign.sign()
+  signInstaller({ type, outputPath, certPassword }) {
+    const filePath = path.join(outputPath, "Installer.pkg")
+    const codeSigner = new CodeSigner({ certPassword, filePath, outputPath })
+    return codeSigner.sign()
+  }
+
+  createDMG({ title, outputPath }) {
+    const dmger = new DMGer({ title, outputPath })
+    return dmger.create()
   }
 
   die(error) {

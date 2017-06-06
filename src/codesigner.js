@@ -5,15 +5,15 @@ const path = require("path")
 const fs = require("fs")
 const axios = require("axios")
 
-class CodeSign {
-  constructor({ certPassword, filePath, deployPath }) {
+class CodeSigner {
+  constructor({ certPassword, filePath, outputPath }) {
     this.filePath = filePath
-    this.deployPath = deployPath
+    this.outputPath = outputPath
     this.certPassword = certPassword
     this.keychainName = UUID.v4()
     this.keychainPassword = UUID.v4()
-    this.macosCertPath = path.join(this.deployPath, "AppleWWDRCA.cer")
-    this.appCertPath = path.join(this.deployPath, "app.p12")
+    this.macosCertPath = path.join(this.outputPath, "AppleWWDRCA.cer")
+    this.appCertPath = path.join(this.outputPath, "app.p12")
     this.identity = "Developer ID Application: Octoblu Inc. (JLSZ8Q5945)"
   }
 
@@ -25,6 +25,15 @@ class CodeSign {
       .then(() => this.importAppCert())
       .then(() => this.signFile())
       .then(() => this.deleteKeychain())
+      .then(() => this.cleanup())
+  }
+
+  cleanup() {
+    const unlinkIfExists = file => {
+      if (fs.existsSync(file)) fs.unlinkSync(file)
+    }
+    unlinkIfExists(this.macosCertPath)
+    unlinkIfExists(this.appCertPath)
   }
 
   createKeychain() {
@@ -75,4 +84,4 @@ class CodeSign {
   }
 }
 
-module.exports.CodeSign = CodeSign
+module.exports.CodeSigner = CodeSigner
