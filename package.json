@@ -1,11 +1,14 @@
 {
   "name": "meshblu-connector-installer-macos",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Generate meshblu-connector installers for MacOS",
   "main": "index.js",
   "scripts": {
-    "test": "exit 0",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "test": "mocha",
+    "test:watch": "mocha -w -R mocha-multi --reporter-options spec=-,mocha-osx-reporter=-",
+    "coverage": "nyc npm test",
+    "mocha": "env NPM_ENV=test mocha --reporter json > coverage/mocha.json"
   },
   "lint-staged": {
     "*.js": [
@@ -41,7 +44,22 @@
   "devDependencies": {
     "husky": "^0.13.4",
     "lint-staged": "^3.6.0",
+    "mocha": "^3.4.2",
+    "mocha-multi": "^0.11.0",
+    "mocha-osx-reporter": "^0.1.2",
+    "nyc": "^11.0.2",
     "prettier": "^1.4.2"
+  },
+  "nyc": {
+    "cache": true,
+    "reporter": [
+      "text-summary",
+      "lcov",
+      "json"
+    ],
+    "extension": [
+      ".coffee"
+    ]
   },
   "engineStrict": true,
   "engines": {
