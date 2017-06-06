@@ -1,6 +1,6 @@
 {
   "name": "meshblu-connector-installer-macos",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Generate meshblu-connector installers for MacOS",
   "main": "index.js",
   "scripts": {
@@ -42,5 +42,9 @@
     "husky": "^0.13.4",
     "lint-staged": "^3.6.0",
     "prettier": "^1.4.2"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=8.0.0"
   }
 }

@@ -3,13 +3,14 @@ const path = require("path")
 const util = require("util")
 const fs = require("fs")
 const chalk = require("chalk")
+const packageJSON = require("./package.json")
 const { Packager } = require("./src/packager")
 const { CodeSigner } = require("./src/codesigner")
 const { DMGer } = require("./src/dmger")
 
 const CLI_OPTIONS = [
   {
-    name: "version",
+    names: ["version", "v"],
     type: "bool",
     help: "Print connector version and exit.",
   },
@@ -91,7 +92,7 @@ class MeshbluConnectorInstallerCommand {
     }
 
     if (opts.version) {
-      console.log(this.packageJSON.version)
+      console.log(packageJSON.version)
       process.exit(0)
     }
 
