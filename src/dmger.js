@@ -1,19 +1,37 @@
 const appdmg = require("appdmg")
 const path = require("path")
-const fs = require("fs")
+const fs = require("fs-extra")
 
 class DMGer {
-  constructor({ outputPath, title }) {
-    this.outputPath = outputPath
+  constructor({ installerPKGPath, installerDMGPath, title }) {
+    this.installerPKGPath = installerPKGPath
+    this.installerDMGPath = installerDMGPath
     this.title = title
   }
 
+  cleanup() {
+    return fs.exists(this.installerDMGPath).then(exists => {
+      if (!exists) return
+      return fs.unlink(this.installerDMGPath)
+    })
+  }
+
+  prepare() {
+    const dirname = path.dirname(this.installerDMGPath)
+    return fs.ensureDir(dirname)
+  }
+
   create() {
-    const installerPKGPath = path.join(this.outputPath, "Installer.pkg")
-    const installerDMGPath = path.join(this.outputPath, "Installer.dmg")
+    return this.cleanup()
+      .then(() => {
+        return this.prepare()
+      })
+      .then(() => {
+        this.dmgit()
+      })
+  }
 
-    if (fs.existsSync(installerDMGPath)) fs.unlinkSync(installerDMGPath)
-
+  dmgit() {
     const specification = {
       title: this.title,
       background: "resources/background.png",
@@ -29,14 +47,14 @@ class DMGer {
           x: 256,
           y: 200,
           type: "file",
-          path: installerPKGPath,
-          name: this.title + ".pkg",
+          path: this.installerPKGPath,
+          name: "Install.pkg",
         },
       ],
     }
 
     return new Promise((resolve, reject) => {
-      const dmg = appdmg({ target: installerDMGPath, basepath: path.join(__dirname, ".."), specification })
+      const dmg = appdmg({ target: this.installerDMGPath, basepath: path.join(__dirname, ".."), specification })
       dmg.on("finish", resolve)
       dmg.on("error", reject)
     })

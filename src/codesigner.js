@@ -6,14 +6,14 @@ const fs = require("fs")
 const axios = require("axios")
 
 class CodeSigner {
-  constructor({ certPassword, filePath, outputPath }) {
-    this.filePath = filePath
-    this.outputPath = outputPath
+  constructor({ certPassword, installerPKGPath, cachePath }) {
+    this.installerPKGPath = installerPKGPath
+    this.cachePath = cachePath
     this.certPassword = certPassword
     this.keychainName = UUID.v4()
     this.keychainPassword = UUID.v4()
-    this.macosCertPath = path.join(this.outputPath, "AppleWWDRCA.cer")
-    this.appCertPath = path.join(this.outputPath, "app.p12")
+    this.macosCertPath = path.join(this.cachePath, "AppleWWDRCA.cer")
+    this.appCertPath = path.join(this.cachePath, "app.p12")
     this.identity = "Developer ID Application: Octoblu Inc. (JLSZ8Q5945)"
   }
 
@@ -80,7 +80,7 @@ class CodeSigner {
   }
 
   signFile() {
-    return exec(`codesign --force --verify --verbose --keychain ${this.keychainName} --sign "${this.identity}" ${this.filePath}`)
+    return exec(`codesign --force --verify --verbose --keychain ${this.keychainName} --sign "${this.identity}" ${this.installerPKGPath}`)
   }
 }
 
