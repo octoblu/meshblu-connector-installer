@@ -49,11 +49,17 @@ class CodeSigner {
   }
 
   downloadMacOSCert() {
-    return this.downloadCert({ url: "https://developer.apple.com/certificationauthority/AppleWWDRCA.cer", filePath: this.macosCertPath })
+    return this.downloadCert({
+      url: "https://developer.apple.com/certificationauthority/AppleWWDRCA.cer",
+      filePath: this.macosCertPath,
+    })
   }
 
   downloadAppCert() {
-    return this.downloadCert({ url: "https://s3-us-west-2.amazonaws.com/meshblu-connector/certs/MeshbluConnectorMacCert.p12", filePath: this.appCertPath })
+    return this.downloadCert({
+      url: "https://s3-us-west-2.amazonaws.com/meshblu-connector/certs/MeshbluConnectorMacCert.p12",
+      filePath: this.appCertPath,
+    })
   }
 
   downloadCert({ url, filePath }) {
@@ -80,7 +86,7 @@ class CodeSigner {
   }
 
   signFile() {
-    return exec(`codesign --force --verify --verbose --keychain ${this.keychainName} --sign "${this.identity}" ${this.installerPKGPath}`)
+    return exec(`codesign --deep --force --verify --keychain ${this.keychainName} --sign "${this.identity}" ${this.installerPKGPath}`)
   }
 }
 
