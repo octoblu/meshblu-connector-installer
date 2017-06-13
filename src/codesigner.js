@@ -1,6 +1,6 @@
 const UUID = require("uuid")
-const util = require("util")
-const exec = util.promisify(require("child_process").exec)
+const Promise = require("bluebird")
+const exec = Promise.promisify(require("child_process").exec)
 const path = require("path")
 const fs = require("fs")
 const axios = require("axios")
@@ -24,11 +24,11 @@ class CodeSigner {
       .then(() => this.importMacOSCert())
       .then(() => this.importAppCert())
       .then(() => this.signFile())
-      .then(() => this.deleteKeychain())
-      .then(() => this.cleanup())
+      .finally(() => this.deleteKeychain())
+      .finally(() => this.unlinkFiles())
   }
 
-  cleanup() {
+  unlinkFiles() {
     const unlinkIfExists = file => {
       if (fs.existsSync(file)) fs.unlinkSync(file)
     }
@@ -86,7 +86,7 @@ class CodeSigner {
   }
 
   signFile() {
-    return exec(`codesign --deep --force --verify --keychain ${this.keychainName} --sign "${this.identity}" ${this.installerPKGPath}`)
+    return exec(`codesign --deep --force --keychain ${this.keychainName} --sign "${this.identity}" ${this.installerPKGPath}`)
   }
 }
 
