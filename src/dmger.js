@@ -22,13 +22,7 @@ class DMGer {
   }
 
   create() {
-    return this.cleanup()
-      .then(() => {
-        return this.prepare()
-      })
-      .then(() => {
-        this.dmgit()
-      })
+    return this.cleanup().then(() => this.prepare()).then(() => this.dmgit())
   }
 
   dmgit() {
@@ -54,7 +48,11 @@ class DMGer {
     }
 
     return new Promise((resolve, reject) => {
-      const dmg = appdmg({ target: this.installerDMGPath, basepath: path.join(__dirname, ".."), specification })
+      const dmg = appdmg({
+        target: this.installerDMGPath,
+        basepath: path.join(__dirname, ".."),
+        specification,
+      })
       dmg.on("finish", resolve)
       dmg.on("error", reject)
     })

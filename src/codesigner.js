@@ -6,8 +6,8 @@ const fs = require("fs")
 const axios = require("axios")
 
 class CodeSigner {
-  constructor({ certPassword, installerPKGPath, cachePath }) {
-    this.installerPKGPath = installerPKGPath
+  constructor({ certPassword, filePath, cachePath }) {
+    this.filePath = filePath
     this.cachePath = cachePath
     this.certPassword = certPassword
     this.keychainName = UUID.v4()
@@ -86,7 +86,7 @@ class CodeSigner {
   }
 
   signFile() {
-    return exec(`codesign --deep --force --keychain ${this.keychainName} --sign "${this.identity}" ${this.installerPKGPath}`)
+    return exec(`codesign --deep --force --keychain ${this.keychainName} --sign "${this.identity}" ${this.filePath}`)
   }
 }
 

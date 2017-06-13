@@ -32,19 +32,7 @@ class MeshbluConnectorInstaller {
   }
 
   build() {
-    return this.copyTemplates()
-      .then(() => {
-        return this.copyPkg()
-      })
-      .then(() => {
-        return this.buildPackage()
-      })
-      .then(() => {
-        return this.signPackage()
-      })
-      .then(() => {
-        return this.createDMG()
-      })
+    return this.copyTemplates().then(() => this.copyPkg()).then(() => this.buildPackage()).then(() => this.signPackage()).then(() => this.createDMG()).then(() => this.signDMG())
   }
 
   copyPkg() {
@@ -77,7 +65,17 @@ class MeshbluConnectorInstaller {
     this.spinner.text = "Signing package"
     const codeSigner = new CodeSigner({
       certPassword: this.certPassword,
-      installerPKGPath: this.installerPKGPath,
+      filePath: this.installerPKGPath,
+      cachePath: this.deployCachePath,
+    })
+    return codeSigner.sign()
+  }
+
+  signDMG() {
+    this.spinner.text = "Signing DMG"
+    const codeSigner = new CodeSigner({
+      certPassword: this.certPassword,
+      filePath: this.installerDMGPath,
       cachePath: this.deployCachePath,
     })
     return codeSigner.sign()
