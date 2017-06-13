@@ -14,7 +14,7 @@ class CodeSigner {
     this.keychainPassword = UUID.v4()
     this.macosCertPath = path.join(this.cachePath, "AppleWWDRCA.cer")
     this.appCertPath = path.join(this.cachePath, "app.p12")
-    this.identity = "Developer ID Application: Octoblu Inc. (JLSZ8Q5945)"
+    this.identity = "Developer ID Installer: Octoblu Inc. (JLSZ8Q5945)"
   }
 
   sign() {
@@ -57,7 +57,7 @@ class CodeSigner {
 
   downloadAppCert() {
     return this.downloadCert({
-      url: "https://s3-us-west-2.amazonaws.com/meshblu-connector/certs/MeshbluConnectorMacCert.p12",
+      url: "https://s3-us-west-2.amazonaws.com/meshblu-connector/certs/MacOSInstallerCert.p12",
       filePath: this.appCertPath,
     })
   }
