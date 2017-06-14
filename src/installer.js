@@ -10,7 +10,6 @@ const { DMGer } = require("./dmger")
 
 class MeshbluConnectorInstaller {
   constructor({ connectorPath, spinner, certPassword, destinationPath }) {
-    this.destinationPath = destinationPath || `/Library/MeshbluConnectors/${this.type}`
     this.connectorPath = path.resolve(connectorPath)
     this.spinner = spinner
     this.certPassword = certPassword
@@ -25,6 +24,7 @@ class MeshbluConnectorInstaller {
     this.deployInstallersPath = path.join(this.deployPath, "installers")
     this.installerPKGPath = path.join(this.deployCachePath, "Installer.pkg")
     this.installerDMGPath = path.join(this.deployInstallersPath, this.macosPackageName + ".dmg")
+    this.destinationPath = destinationPath || `/Library/MeshbluConnectors/${this.type}`
     this.templateData = {
       type: this.type,
       version: this.version,
@@ -34,7 +34,7 @@ class MeshbluConnectorInstaller {
   }
 
   build() {
-    return this.copyTemplates().then(() => this.copyPkg()).then(() => this.buildPackage()).then(() => this.signPackage()).then(() => this.createDMG())
+    return this.copyTemplates().then(() => this.copyAssets()).then(() => this.buildPackage()).then(() => this.signPackage()).then(() => this.createDMG())
     // .then(() => this.signDMG())
   }
 
@@ -49,13 +49,19 @@ class MeshbluConnectorInstaller {
     return `node${nodeVersion}-${platform}-${arch}`
   }
 
-  copyPkg() {
+  copyAssets() {
     this.spinner.text = "Copying pkg assets"
     const destination = path.join(this.deployCachePath, this.macosPackageName)
     const source = path.join(this.deployPath, "bin")
-    return fs.ensureDir(destination).then(() => {
-      return fs.copy(source, destination)
-    })
+    return fs
+      .pathExists(source)
+      .then(exists => {
+        if (!exists) {
+          return Promise.reject(new Error(`Source path does not exist: ${source}`))
+        }
+        return fs.ensureDir(destination)
+      })
+      .then(() => fs.copy(source, destination))
   }
 
   buildPackage() {
