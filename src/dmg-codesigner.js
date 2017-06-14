@@ -2,10 +2,10 @@ const UUID = require("uuid")
 const Promise = require("bluebird")
 const exec = Promise.promisify(require("child_process").exec)
 const path = require("path")
-const fs = require("fs")
+const fs = require("fs-extra")
 const axios = require("axios")
 
-class CodeSigner {
+class DMGCodeSigner {
   constructor({ certPassword, filePath, cachePath }) {
     this.filePath = filePath
     this.cachePath = cachePath
@@ -14,30 +14,40 @@ class CodeSigner {
     this.keychainPassword = UUID.v4()
     this.macosCertPath = path.join(this.cachePath, "AppleWWDRCA.cer")
     this.appCertPath = path.join(this.cachePath, "app.p12")
-    this.identity = "Developer ID Installer: Octoblu Inc. (JLSZ8Q5945)"
+    this.identity = "Developer ID Application: Octoblu Inc. (JLSZ8Q5945)"
   }
 
   sign() {
     // sorry!
     return this.downloadCerts()
       .then(() => this.createKeychain())
+      .then(() => this.unlockKeychain())
       .then(() => this.importMacOSCert())
       .then(() => this.importAppCert())
       .then(() => this.signFile())
+      .finally(() => this.lockKeychain())
       .finally(() => this.deleteKeychain())
-      .finally(() => this.unlinkFiles())
+      .finally(() => this.unlinkIfExists(this.appCertPath))
+      .finally(() => this.unlinkIfExists(this.macosCertPath))
   }
 
-  unlinkFiles() {
-    const unlinkIfExists = file => {
-      if (fs.existsSync(file)) fs.unlinkSync(file)
-    }
-    unlinkIfExists(this.macosCertPath)
-    unlinkIfExists(this.appCertPath)
+  unlinkIfExists(file) {
+    return fs.pathExists(file).then(exists => {
+      if (exists) return fs.unlink(file)
+      return Promise.resolve()
+    })
   }
 
   createKeychain() {
     return exec(`security create-keychain -p ${this.keychainPassword} ${this.keychainName}`)
+  }
+
+  unlockKeychain() {
+    return exec(`security unlock-keychain -p ${this.keychainPassword} ${this.keychainName}`)
+  }
+
+  lockKeychain() {
+    return exec(`security lock-keychain ${this.keychainName}`)
   }
 
   deleteKeychain() {
@@ -45,7 +55,7 @@ class CodeSigner {
   }
 
   downloadCerts() {
-    return Promise.all([this.downloadMacOSCert(), this.downloadAppCert()])
+    return Promise.all([this.downloadAppCert(), this.downloadMacOSCert()])
   }
 
   downloadMacOSCert() {
@@ -57,7 +67,7 @@ class CodeSigner {
 
   downloadAppCert() {
     return this.downloadCert({
-      url: "https://s3-us-west-2.amazonaws.com/meshblu-connector/certs/MacOSInstallerCert.p12",
+      url: "https://s3-us-west-2.amazonaws.com/meshblu-connector/certs/MeshbluConnectorMacCert.p12",
       filePath: this.appCertPath,
     })
   }
@@ -78,11 +88,11 @@ class CodeSigner {
   }
 
   importMacOSCert() {
-    return exec(`security import ${this.macosCertPath} -k ${this.keychainName} -T /usr/bin/codesign`)
+    return exec(`security import ${this.macosCertPath} -k ${this.keychainName} -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/productsign`)
   }
 
   importAppCert() {
-    return exec(`security import ${this.appCertPath} -k ${this.keychainName} -P "${this.certPassword}" -T /usr/bin/codesign -T /usr/bin/productbuild`)
+    return exec(`security import ${this.appCertPath} -k ${this.keychainName} -P "${this.certPassword}" -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/productsign`)
   }
 
   signFile() {
@@ -90,4 +100,4 @@ class CodeSigner {
   }
 }
 
-module.exports.CodeSigner = CodeSigner
+module.exports.DMGCodeSigner = DMGCodeSigner

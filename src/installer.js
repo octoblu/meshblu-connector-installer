@@ -4,7 +4,8 @@ const glob = Promise.promisify(require("glob"))
 const parseTemplate = require("json-templates")
 const path = require("path")
 const createPackage = require("@octoblu/osx-pkg")
-const { CodeSigner } = require("./codesigner")
+const { DMGCodeSigner } = require("./dmg-codesigner")
+const { PKGCodeSigner } = require("./pkg-codesigner")
 const { DMGer } = require("./dmger")
 
 class MeshbluConnectorInstaller {
@@ -33,7 +34,8 @@ class MeshbluConnectorInstaller {
   }
 
   build() {
-    return this.copyTemplates().then(() => this.copyPkg()).then(() => this.buildPackage()).then(() => this.signPackage()).then(() => this.createDMG()).then(() => this.signDMG())
+    return this.copyTemplates().then(() => this.copyPkg()).then(() => this.buildPackage()).then(() => this.signPackage()).then(() => this.createDMG())
+    // .then(() => this.signDMG())
   }
 
   getTarget() {
@@ -75,7 +77,7 @@ class MeshbluConnectorInstaller {
 
   signPackage() {
     this.spinner.text = "Signing package"
-    const codeSigner = new CodeSigner({
+    const codeSigner = new PKGCodeSigner({
       certPassword: this.certPassword,
       filePath: this.installerPKGPath,
       cachePath: this.deployCachePath,
@@ -85,7 +87,7 @@ class MeshbluConnectorInstaller {
 
   signDMG() {
     this.spinner.text = "Signing DMG"
-    const codeSigner = new CodeSigner({
+    const codeSigner = new DMGCodeSigner({
       certPassword: this.certPassword,
       filePath: this.installerDMGPath,
       cachePath: this.deployCachePath,
