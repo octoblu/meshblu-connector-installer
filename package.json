@@ -1,6 +1,6 @@
 {
   "name": "meshblu-connector-installer-macos",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Generate meshblu-connector installers for MacOS",
   "main": "index.js",
   "scripts": {

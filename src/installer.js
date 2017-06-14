@@ -9,7 +9,8 @@ const { PKGCodeSigner } = require("./pkg-codesigner")
 const { DMGer } = require("./dmger")
 
 class MeshbluConnectorInstaller {
-  constructor({ connectorPath, spinner, certPassword }) {
+  constructor({ connectorPath, spinner, certPassword, destinationPath }) {
+    this.destinationPath = destinationPath || `/Library/MeshbluConnectors/${this.type}`
     this.connectorPath = path.resolve(connectorPath)
     this.spinner = spinner
     this.certPassword = certPassword
@@ -24,7 +25,6 @@ class MeshbluConnectorInstaller {
     this.deployInstallersPath = path.join(this.deployPath, "installers")
     this.installerPKGPath = path.join(this.deployCachePath, "Installer.pkg")
     this.installerDMGPath = path.join(this.deployInstallersPath, this.macosPackageName + ".dmg")
-    this.macosLibraryPath = `/Library/MeshbluConnectors/${this.type}`
     this.templateData = {
       type: this.type,
       version: this.version,
@@ -62,7 +62,7 @@ class MeshbluConnectorInstaller {
     this.spinner.text = "Building package"
     const opts = {
       dir: path.join(this.deployCachePath, this.macosPackageName),
-      installLocation: this.macosLibraryPath,
+      installLocation: this.destinationPath,
       identifier: `.com.octoblu.connectors.${this.type}.pkg`,
       title: this.type,
     }
