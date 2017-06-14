@@ -16,8 +16,9 @@ class MeshbluConnectorInstaller {
     this.type = this.packageJSON.name
     this.version = this.packageJSON.version
     this.arch = "macos"
+    this.target = this.getTarget()
     this.macosPackageName = `${this.type}_${this.version}-${this.arch}`
-    this.deployPath = path.join(this.connectorPath, "deploy")
+    this.deployPath = path.join(this.connectorPath, "deploy", this.target)
     this.deployCachePath = path.join(this.deployPath, ".cache")
     this.deployInstallersPath = path.join(this.deployPath, "installers")
     this.installerPKGPath = path.join(this.deployCachePath, "Installer.pkg")
@@ -33,6 +34,17 @@ class MeshbluConnectorInstaller {
 
   build() {
     return this.copyTemplates().then(() => this.copyPkg()).then(() => this.buildPackage()).then(() => this.signPackage()).then(() => this.createDMG()).then(() => this.signDMG())
+  }
+
+  getTarget() {
+    let { arch, platform } = process
+    if (platform === "darwin") platform = "macos"
+    if (platform === "win32") platform = "win"
+    if (arch === "ia32") arch = "x86"
+    if (arch === "arm") arch = "armv7"
+
+    const nodeVersion = "8"
+    return `node${nodeVersion}-${platform}-${arch}`
   }
 
   copyPkg() {
