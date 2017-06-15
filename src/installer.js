@@ -7,6 +7,7 @@ const createPackage = require("@octoblu/osx-pkg")
 const { DMGCodeSigner } = require("./dmg-codesigner")
 const { PKGCodeSigner } = require("./pkg-codesigner")
 const { DMGer } = require("./dmger")
+const debug = require("debug")("meshblu-connector-installer-macos")
 
 class MeshbluConnectorInstaller {
   constructor({ connectorPath, spinner, certPassword, destinationPath }) {
@@ -53,6 +54,7 @@ class MeshbluConnectorInstaller {
     this.spinner.text = "Copying pkg assets"
     const destination = path.join(this.deployCachePath, this.macosPackageName)
     const source = path.join(this.deployPath, "bin")
+    debug("copy pkg assets", { source, destination })
     return fs
       .pathExists(source)
       .then(exists => {
@@ -66,6 +68,7 @@ class MeshbluConnectorInstaller {
 
   buildPackage() {
     this.spinner.text = "Building package"
+    debug("building package")
     const opts = {
       dir: path.join(this.deployCachePath, this.macosPackageName),
       installLocation: this.destinationPath,
@@ -83,6 +86,7 @@ class MeshbluConnectorInstaller {
 
   signPackage() {
     this.spinner.text = "Signing package"
+    debug("signing package")
     const codeSigner = new PKGCodeSigner({
       certPassword: this.certPassword,
       filePath: this.installerPKGPath,
@@ -93,6 +97,7 @@ class MeshbluConnectorInstaller {
 
   signDMG() {
     this.spinner.text = "Signing DMG"
+    debug("signing dmg")
     const codeSigner = new DMGCodeSigner({
       certPassword: this.certPassword,
       filePath: this.installerDMGPath,
@@ -103,6 +108,7 @@ class MeshbluConnectorInstaller {
 
   createDMG() {
     this.spinner.text = "Creating DMG"
+    debug("creating dmg")
     const dmger = new DMGer({
       title: this.type,
       installerPKGPath: this.installerPKGPath,
@@ -113,6 +119,7 @@ class MeshbluConnectorInstaller {
 
   copyTemplates() {
     this.spinner.text = "Processing templates"
+    debug("coping templates")
     const packageTemplatePath = path.resolve(path.join(this.connectorPath, ".installer", "macos", "templates", "**/*"))
     const defaultTemplatePath = path.resolve(path.join(__dirname, "..", "templates", "**/*"))
     return this.findTemplatesFromPaths([packageTemplatePath, defaultTemplatePath]).each(templates => {
