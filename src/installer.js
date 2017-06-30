@@ -1,12 +1,11 @@
 const fs = require("fs-extra")
 const Promise = require("bluebird")
-const glob = Promise.promisify(require("glob"))
-const parseTemplate = require("json-templates")
 const path = require("path")
 const createPackage = require("@octoblu/osx-pkg")
 const { DMGCodeSigner } = require("./dmg-codesigner")
 const { PKGCodeSigner } = require("./pkg-codesigner")
 const { DMGer } = require("./dmger")
+const JSONTemplateFiles = require("json-template-files")
 const debug = require("debug")("meshblu-connector-installer-macos")
 
 class MeshbluConnectorInstaller {
@@ -122,50 +121,12 @@ class MeshbluConnectorInstaller {
     debug("coping templates")
     const packageTemplatePath = path.resolve(path.join(this.connectorPath, ".installer", "macos", "templates", "**/*"))
     const defaultTemplatePath = path.resolve(path.join(__dirname, "..", "templates", "**/*"))
-    return this.findTemplatesFromPaths([packageTemplatePath, defaultTemplatePath]).each(templates => {
-      return this.processTemplates(templates)
-    })
-  }
-
-  findTemplatesFromPaths(templatePaths) {
-    return Promise.map(templatePaths, templatePath => {
-      return glob(templatePath, { nodir: true })
-    })
-  }
-
-  processTemplates(templates) {
-    return Promise.map(templates, template => {
-      const filename = path.basename(template)
-      if (filename.indexOf("_") == 0) {
-        return this.processTemplate(template)
-      }
-      return this.copyFile(template)
-    })
-  }
-
-  getFilePath(file) {
-    const fileRegex = new RegExp(`${path.sep}templates${path.sep}(.*)$`)
-    const matches = file.match(fileRegex)
-    const filePartial = matches[matches.length - 1]
-    const filePath = path.join(this.deployCachePath, this.macosPackageName, filePartial)
-    const { base, dir } = path.parse(filePath)
-    const newBase = base.replace(/^_/, "")
-    return path.join(dir, newBase)
-  }
-
-  processTemplate(file) {
-    const template = parseTemplate(fs.readFileSync(file, "utf-8"))
-    const results = template(this.templateData)
-    const filePath = this.getFilePath(file)
-    return fs.outputFile(filePath, results)
-  }
-
-  copyFile(file) {
-    const filePath = this.getFilePath(file)
-    const fileDirPath = path.dirname(filePath)
-    return fs.ensureDir(fileDirPath).then(() => {
-      return fs.copy(file, filePath, { overwrite: true })
-    })
+    return new JSONTemplateFiles({
+      packageTemplatePath,
+      defaultTemplatePath,
+      templateData: this.templateData,
+      outputPath: path.join(this.deployCachePath, this.macosPackageName),
+    }).process()
   }
 }
 
